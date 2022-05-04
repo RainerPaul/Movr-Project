@@ -1,0 +1,49 @@
+--Pulling all records of Vehicles active at specified Lattitude and Longitude on 2020-06-23
+SELECT *
+FROM public.vehicle_location_histories
+WHERE (long between 40.5 AND 40.6)
+AND (lat BETWEEN -74.997 AND -74.9968) 
+AND (Timestamp BETWEEN '2020-06-23' AND '2020-06-24');
+--Finding the riders during that date and time
+SELECT DISTINCT c.name
+FROM public.vehicle_location_histories as A
+JOIN public.rides As b ON a.ride_id = b.id
+JOIN public.users AS c on b.rider_id = c.id
+WHERE (a.Timestamp BETWEEN '2020-06-23' AND '2020-06-24')
+AND (a.long between 40.5 AND 40.6)
+AND (a.lat BETWEEN -74.997 AND -74.9968);
+
+--Aggregate Functions with Partition
+SELECT DISTINCT city, AVG(a.revenue)
+OVER (PARTITION BY a.city)
+FROM public.rides AS a
+ORDER BY a.city ASC;
+
+--Finding the SUM, MIN and MAX revenue Grouped By City
+SELECT SUM(a.revenue), MIN(a.revenue), MAX(a.revenue), a.city
+FROM public.rides AS a
+GROUP BY a.city
+ORDER BY a.city ASC;
+
+--Finding the AVG ride length as "Long", 'Medium" or "Short" 
+--grouped by vehicle type and city
+SELECT b.type, a.city,
+CASE WHEN AVG(a.revenue) >= 100 then 'Long'
+WHEN AVG(a.revenue) >= 50 THEN 'medium'
+ELSE 'short'
+END AS ride_length
+FROM public.rides AS a
+JOIN public.vehicles AS b ON b.id = a.vehicle_id
+GROUP BY a.city, b.type;
+
+--Creating Revenue per Vehicle View
+CREATE VIEW Revenue_Per_Vehicle AS 
+SELECT SUM(a.revenue), COUNT(a.revenue), b.id, b.type
+FROM public.rides As a
+JOIN public.vehicles AS b ON a.vehicle_id = b.id
+GROUP BY b.id;
+
+--Using View to find the highest revenue vehicle type
+SELECT SUM(sum), type
+FROM Revenue_Per_Vehicle
+GROUP BY type;
